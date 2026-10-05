@@ -15,6 +15,10 @@ let
         name = "Custom Model 1";
       }
     ];
+    # Freeform provider field used by OpenAI-compatible thinking backends.
+    compat = {
+      thinkingFormat = "qwen-chat-template";
+    };
   };
 
   # Test 1: Full configuration evaluation with object references
@@ -74,6 +78,15 @@ let
   hasPlanModeSetting = cfg.settings.planMode.mode == "thorough";
   hasAntigravityProvider = cfg.providers.antigravity.package != null;
   hasCustomProvider = cfg.providers.custom-created.baseUrl == "https://custom.provider.test";
+  hasCustomCompat =
+    (cfg.providers.custom-created.compat.thinkingFormat or null) == "qwen-chat-template";
+  generatedModels =
+    if cfg.generatedModelsFile == null then
+      { }
+    else
+      builtins.fromJSON (builtins.readFile cfg.generatedModelsFile);
+  hasCompatInModelsJson =
+    (generatedModels.providers.custom-created.compat.thinkingFormat or null) == "qwen-chat-template";
   hasCorrectDefaultProvider = cfg.settings.defaultProvider == "antigravity";
   hasCorrectDefaultModel = cfg.settings.defaultModel == "gemini-3.7-flash";
   hasCommitStyleSkill = cfg.skills ? commit-style && cfg.skills.commit-style.package != null;
@@ -88,6 +101,8 @@ let
     && hasPlanModeSetting
     && hasAntigravityProvider
     && hasCustomProvider
+    && hasCustomCompat
+    && hasCompatInModelsJson
     && hasCorrectDefaultProvider
     && hasCorrectDefaultModel
     && hasCommitStyleSkill

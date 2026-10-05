@@ -60,6 +60,25 @@ let
       models
     else
       { };
+
+  # Pass through freeform fields (compat, custom headers, …) into the provider
+  # object so models.json generation can keep them.
+  knownArgs = [
+    "name"
+    "src"
+    "package"
+    "version"
+    "baseUrl"
+    "api"
+    "apiKey"
+    "models"
+    "runtimePackages"
+    "environment"
+    "piManifest"
+    "meta"
+    "pkgs"
+  ];
+  extras = builtins.removeAttrs args knownArgs;
 in
 {
   inherit
@@ -81,3 +100,4 @@ in
     models = normalizedModels;
   };
 }
+// extras

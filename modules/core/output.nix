@@ -130,26 +130,42 @@ let
 
   settingsJson = pkgs.writeText "pi-settings.json" (builtins.toJSON cleanedSettings);
 
+  # Module-only keys that must not appear in models.json. Keep freeform
+  # provider fields (e.g. compat, custom headers) so static OpenAI-compatible
+  # endpoints can declare thinkingFormat and related knobs.
+  modelsJsonDropKeys = [
+    "enable"
+    "package"
+    "packages"
+    "runtimePackages"
+    "environment"
+    "isPiProvider"
+    "passthru"
+    "version"
+  ];
+
+  toModelsProvider =
+    prov:
+    let
+      models =
+        if builtins.isAttrs (prov.models or null) then
+          builtins.attrValues prov.models
+        else if builtins.isList (prov.models or null) then
+          prov.models
+        else
+          [ ];
+    in
+    lib.filterAttrs (_: v: v != null) (
+      (builtins.removeAttrs prov modelsJsonDropKeys)
+      // {
+        inherit models;
+      }
+    );
+
   # Collect providers with static endpoint declarations for models.json
-  staticProviders =
-    lib.filterAttrs
-      (n: prov: (prov ? baseUrl && prov.baseUrl != null) || (prov ? api && prov.api != null))
-      (
-        builtins.mapAttrs (n: prov: {
-          inherit (prov)
-            baseUrl
-            api
-            apiKey
-            ;
-          models =
-            if builtins.isAttrs (prov.models or null) then
-              builtins.attrValues prov.models
-            else if builtins.isList (prov.models or null) then
-              prov.models
-            else
-              [ ];
-        }) enabledProviders
-      );
+  staticProviders = lib.filterAttrs (
+    _: prov: (prov ? baseUrl && prov.baseUrl != null) || (prov ? api && prov.api != null)
+  ) (builtins.mapAttrs (_: toModelsProvider) enabledProviders);
 
   cleanedProviders = filterNulls staticProviders;
 

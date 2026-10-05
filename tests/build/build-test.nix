@@ -33,6 +33,9 @@ let
         name = "Test Model";
       }
     ];
+    compat = {
+      thinkingFormat = "qwen-chat-template";
+    };
   };
 
   configuredPi = nixpiLib.makePi {
@@ -64,6 +67,7 @@ pkgs.runCommand "nixpi-build-test" { } ''
   grep -q "commit-style" "${configuredPi.settingsJson}"
   grep -q "test-skill" "${configuredPi.settingsJson}"
   grep -q '"test-model"' "${configuredPi.modelsJson}"
+  grep -q 'qwen-chat-template' "${configuredPi.modelsJson}"
   if grep -q 'null' "${configuredPi.modelsJson}"; then
     echo "Generated models.json contains null values" >&2
     exit 1
